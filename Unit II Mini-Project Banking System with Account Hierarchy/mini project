@@ -1,0 +1,205 @@
+#include <iostream>
+#include <iomanip>
+#include <memory>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+class Account {
+protected:
+    int accountNumber;
+    string holderName;
+    double balance;
+
+public:
+    Account(int accNo, string name, double initialBalance)
+        : accountNumber(accNo),
+          holderName(name),
+          balance(initialBalance) {}
+
+    virtual void deposit(double amount) {
+        balance += amount;
+    }
+
+    virtual bool withdraw(double amount) {
+        if (amount <= balance) {
+            balance -= amount;
+            return true;
+        }
+
+        cout << "Insufficient balance!" << endl;
+        return false;
+    }
+
+    virtual double calculateInterest() const = 0;
+
+    virtual void displayAccount() const {
+        cout << "Account No.: " << accountNumber
+             << " | Holder: " << holderName
+             << " | Balance: Rs. " << fixed << setprecision(2)
+             << balance;
+    }
+
+    virtual ~Account() = default;
+};
+
+// Savings Account
+class SavingsAccount : public Account {
+private:
+    double interestRate;
+
+public:
+    SavingsAccount(
+        int accNo,
+        string name,
+        double initialBalance,
+        double rate
+    )
+        : Account(accNo, name, initialBalance),
+          interestRate(rate) {}
+
+    double calculateInterest() const override {
+        return balance * interestRate / 100;
+    }
+
+    void displayAccount() const override {
+        cout << "Savings Account | ";
+        Account::displayAccount();
+
+        cout << " | Interest: Rs. "
+             << calculateInterest() << endl;
+    }
+};
+
+// Current Account
+class CurrentAccount : public Account {
+private:
+    double minimumBalance;
+
+public:
+    CurrentAccount(
+        int accNo,
+        string name,
+        double initialBalance,
+        double minBalance
+    )
+        : Account(accNo, name, initialBalance),
+          minimumBalance(minBalance) {}
+
+    bool withdraw(double amount) override {
+        if (balance - amount >= minimumBalance) {
+            balance -= amount;
+            return true;
+        }
+
+        cout << "Withdrawal denied! "
+             << "Minimum balance requirement not met."
+             << endl;
+
+        return false;
+    }
+
+    double calculateInterest() const override {
+        return 0.0;
+    }
+
+    void displayAccount() const override {
+        cout << "Current Account | ";
+        Account::displayAccount();
+
+        cout << " | Interest: Rs. "
+             << calculateInterest() << endl;
+    }
+};
+
+// Fixed Deposit Account
+class FixedDepositAccount : public Account {
+private:
+    double interestRate;
+    int durationYears;
+
+public:
+    FixedDepositAccount(
+        int accNo,
+        string name,
+        double initialBalance,
+        double rate,
+        int years
+    )
+        : Account(accNo, name, initialBalance),
+          interestRate(rate),
+          durationYears(years) {}
+
+    double calculateInterest() const override {
+        return balance * interestRate * durationYears / 100;
+    }
+
+    bool withdraw(double amount) override {
+        cout << "Withdrawal is not allowed "
+             << "from Fixed Deposit before maturity."
+             << endl;
+
+        return false;
+    }
+
+    void displayAccount() const override {
+        cout << "Fixed Deposit Account | ";
+        Account::displayAccount();
+
+        cout << " | Interest: Rs. "
+             << calculateInterest()
+             << " | Duration: "
+             << durationYears << " years"
+             << endl;
+    }
+};
+
+int main() {
+    vector<unique_ptr<Account>> accounts;
+
+    accounts.push_back(
+        make_unique<SavingsAccount>(
+            1001, "Amit", 50000, 6.5
+        )
+    );
+
+    accounts.push_back(
+        make_unique<CurrentAccount>(
+            1002, "Sneha", 80000, 10000
+        )
+    );
+
+    accounts.push_back(
+        make_unique<FixedDepositAccount>(
+            1003, "Rohan", 100000, 7.5, 3
+        )
+    );
+
+    cout << "========================================" << endl;
+    cout << "       BANKING SYSTEM" << endl;
+    cout << "========================================" << endl;
+
+    cout << "\n=== Initial Account Details ===" << endl;
+
+    for (const auto& account : accounts) {
+        account->displayAccount();
+    }
+
+    // Deposit money
+    accounts[0]->deposit(10000);
+
+    // Withdraw money
+    accounts[1]->withdraw(20000);
+
+    // Attempt withdrawal from Fixed Deposit
+    accounts[2]->withdraw(10000);
+
+    cout << "\n=== Updated Account Details ===" << endl;
+
+    for (const auto& account : accounts) {
+        account->displayAccount();
+    }
+
+    return 0;
+}
